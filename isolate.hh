@@ -27,6 +27,6 @@ template <typename T> SimpleVector<T> isolateif(const std::vector<SimpleMatrix<T
   return b;
 }
 
-#define _SURFACE_
+#define _ISOLATE_
 #endif
 
