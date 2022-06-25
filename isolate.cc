@@ -15,7 +15,7 @@ typedef myfloat num_t;
 
 int main(int argc, const char* argv[]) {
   std::string s;
-  assert(3 < argc);
+  assert(2 < argc);
   const auto n(std::atoi(argv[1]));
   const auto N(std::atoi(argv[2]));
   std::vector<SimpleMatrix<num_t> > A;
