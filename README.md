@@ -12,4 +12,4 @@ with the condition A\_k -\> A'\_k reduces some of accuracy, B is the same matrix
 By symmetrize A\_k to A''\_k, log(A''\_k) = log(A'''\_k) + log(B) in ivariant meaning,
 So it's only a balancing method.
 
-However, if the program has some switching, it's also A\_k = \<b,x\> A'\_k + (1 - \<b,x\>) A''\_k for any k, so to decompose this, we need another decomposition methods.
+However, if the program has some switching, it's also A\_k = \<b,x\> A'\_k + (1 - \<b,x\>) A''\_k for any k, so to decompose this, we need another decomposition methods s.t. recompile into \<A\_k,i x, x\> form, then, decompose, then, reverse form and so on..
