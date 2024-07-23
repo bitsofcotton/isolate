@@ -2917,6 +2917,7 @@ template <typename T> using SimpleSparseMatrix = SimpleSparseVector<SimpleSparse
 template <typename T> using SimpleSparseTensor = SimpleSparseVector<SimpleSparseVector<SimpleSparseVector<T> > >;
 
 
+// N.B. start raw prediction operations.
 template <typename T> class CatG {
 public:
   inline CatG() { ; }
@@ -3708,6 +3709,7 @@ template <typename T> using P10 =
 template <typename T> using P210 =
    PAthenB<T, Pprogression<T, P012L<T> >, P10<T> >;
 
+// N.B. start det diag operations.
 // N.B. invariant gathers some of the group on the input pattern.
 template <typename T> SimpleMatrix<T> concat(const SimpleMatrix<T>& m0, const SimpleMatrix<T>& m1) {
   // det diag result = det diag m0 + det diag m1
@@ -3795,6 +3797,7 @@ template <typename T> SimpleVector<T> reduce(const SimpleMatrix<T> m) {
 }
 
 
+// N.B. start Decompose
 template <typename T> class Decompose {
 public:
   typedef SimpleVector<T> Vec;
@@ -4036,6 +4039,7 @@ template <typename T> typename Decompose<T>::Mat Decompose<T>::represent(const M
 }
 
 
+// N.B. start image functions
 static inline bool whiteline(const string& s) {
   for(auto ss(s.begin()); ss < s.end(); ++ ss)
     if(! std::isspace(* ss) && *ss != '\n')
@@ -4322,6 +4326,7 @@ template <typename T> static inline SimpleMatrix<T> center(const SimpleMatrix<T>
   return res;
 }
 
+// N.B. start ddpmopt
 // N.B. the raw P01 predictor is useless because of their sloppiness.
 template <typename T> pair<SimpleVector<T>, SimpleVector<T> > predv(const vector<SimpleVector<T> >& in) {
   // N.B. we need to initialize p0 vector.
@@ -4540,6 +4545,43 @@ static const vector<int>& pnTinySingle(const int& upper = 1) {
     }
   }
   return pn;
+}
+
+
+// N.B. start isolate
+template <typename T> static inline SimpleMatrix<T> harmlessSymmetrizeSquare(const SimpleMatrix<T>& m) {
+  assert(0 < m.rows() && 0 < m.cols() && m.cols() == m.rows());
+  SimpleMatrix<T> res(m.rows() + m.cols(), m.cols() + m.rows());
+  res.O();
+  return res.setMatrix(0, m.cols(), m.transpose() -
+     SimpleMatrix<T>(m.rows(), m.rows()).I()).
+    setMatrix(m.rows(), 0, m - SimpleMatrix<T>(m.cols(), m.cols()).I());
+}
+
+template <typename T> static inline SimpleVector<T> balanceIntInvariant(const SimpleMatrix<T>& m, const vector<SimpleMatrix<T> >& db) {
+  vector<SimpleMatrix<T> > logsymdb;
+  logsymdb.reserve(db.size());
+  for(int i = 0; i < db.size(); i ++) {
+    logsymdb.emplace_back(log(harmlessSymmetrizeSquare(db[i])));
+    assert(logsymdb[0].rows() == logsymdb[i].rows() &&
+           logsymdb[0].cols() == logsymdb[i].cols());
+  }
+  auto mm(log(harmlessSymmetrizeSquare(m)));
+  assert(logsymdb[0].rows() == mm.rows() &&
+         logsymdb[0].cols() == mm.cols());
+  SimpleMatrix<T> f(logsymdb.size(), logsymdb[0].rows() * logsymdb[0].cols());
+  f.O();
+  for(int i = 0; i < logsymdb.size(); i ++)
+    for(int j = 0; j < logsymdb[i].rows(); j ++)
+      for(int k = 0; k < logsymdb[i].cols(); k ++)
+        f(i, j * logsymdb[i].cols() + k) = move(logsymdb[i](j, k));
+  SimpleVector<T> vmm(mm.rows() * mm.cols());
+  for(int j = 0; j < mm.rows(); j ++)
+    for(int k = 0; k < mm.cols(); k ++)
+      vmm[j * mm.cols() + k] = move(mm(j, k));
+  // balance here.
+  // return f.QP(vmm);
+  return SimpleVector<T>();
 }
 
 #define _SIMPLELIN_
