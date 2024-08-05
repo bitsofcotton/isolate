@@ -24,3 +24,8 @@ We're doubting this is because of 2nd order saturation on the information amount
 This means if the invariants can be decomposed into some of the algebraic loops, we can decompose them with the limit with only the transformation once of the whole.
 However, we are in the maze why this cannot be counted from -4 degree (it causes 9 layers whole, if 6 layers a re 2/3, 9 layers are 1.) nor why the analytic solution they cannot be solved algebraic one is excluded. Nor, why we need the invariant to take such decompositions' solution.
 
+# General Tips 2
+Almost of the infinite loop is treated as A_0^infty by single loop A_0 matrix.
+So Log A_0^infty == infty Log A_0, also if they converges B:=A_0^infty, log B == lim(t) Log A_0(t).
+So taking the log on original algorithm optimized matrix makes some of the information on infinite loops however they lose some of the weight on the original single loops.
+
