@@ -4652,6 +4652,20 @@ template <typename T> static inline SimpleVector<T> balanceIntInvariant(const Si
   return f.solveN(vmm);
 }
 
+template <typename T> static inline SimpleVector<T> powProgram(const pair<SimpleVector<T>, T>& m, const T& p, const vector<SimpleMatrix<T> >& db) {
+  // N.B. power partial projected vector m by p using db.
+  //      this is: tan ([a_0,...,a_n]^t x) == tan(S_0 ... x) form,
+  //      getting (S_0...)^p.row(k) using program decomposition.
+  // N.B. without db, we cannot get unique m^p in this invariant meaning.
+  assert(db.size() && m.first.size() == db[0].cols() &&
+         db[0].rows() == db[0].cols());
+  for(int i = 1; i < db.size(); i ++)
+    assert(db[i].rows() == db[0].rows() && db[i].cols() == db[0].cols());
+  // N.B. balance inputs:
+  // N.B. stub.
+  assert(0 && "powProgram stub.");
+  return m;
+}
 
 // N.B. start goki check
 template <typename T> static inline bool less0(const T& x, const T& y) {
