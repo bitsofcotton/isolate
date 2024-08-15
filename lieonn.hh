@@ -2520,7 +2520,7 @@ template <typename T> static inline SimpleMatrix<T> logSym(const SimpleMatrix<T>
   for(int i = 0; i < b.rows(); i ++)
     for(int j = i + 1; j < b.cols(); j ++)
       assert(b(i, j) == b(j, i));
-  // N.B. Ux Lx Uxt == X := B^A == Ub Ua La log(Lb_k) Uat Ubt.
+  // N.B. Ux Lx Uxt == X := B^A == Ub Ua exp(La) Lb_k Uat Ubt.
   const auto Ub(b.SVD());
   const auto Ubt(b.transpose().SVD());
   const auto Lb(Ub * b * Ubt.transpose());
@@ -2531,7 +2531,8 @@ template <typename T> static inline SimpleMatrix<T> logSym(const SimpleMatrix<T>
   SimpleVector<T> Lawork(Ux.rows());
   Lawork.O();
   for(int i = 0; i < Lawork.size(); i ++)
-    Lawork[i] = Lx(i, i) / log(Lb(i / (x.rows() / b.rows())));
+    // XXX:
+    Lawork[i] = log(Lx(i, i) / Lb(i / (x.rows() / b.rows())));
   // N.B. Lawork.subVector... == another subVector in Ua diag(La) Uat condition.
   // XXX: might be a wrong method.
   SimpleMatrix<T> UUb(x.rows(), x.cols());
@@ -2606,7 +2607,8 @@ template <typename T> static inline SimpleMatrix<T> powSym(const SimpleMatrix<T>
   res.O();
   for(int i = 0; i < m.rows(); i ++) {
     auto work(Up);
-    work.I(log(Lm(i, i)));
+    for(int j = 0; j < p.rows(); j ++)
+      work(i * p.rows() + j, j) = exp(Lp(j, j)) * Lm(i, i);
     res.setMatrix(i * p.rows(), i * p.cols(), Up * work * Upt);
   }
   // XXX: here might not be trace trustworthy path,
