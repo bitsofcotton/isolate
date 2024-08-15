@@ -1956,6 +1956,7 @@ public:
     return result;
   }
   inline       SimpleVector<T>  solve(SimpleVector<T> other) const;
+  inline       SimpleVector<T>  solveN(SimpleVector<T> other) const;
   inline       SimpleVector<T>  projectionPt(const SimpleVector<T>& other) const;
   inline       SimpleMatrix<T>& fillP(const vector<int>& idx);
   inline       SimpleMatrix<T>  QR() const;
@@ -2102,6 +2103,13 @@ template <typename T> inline SimpleVector<T> SimpleMatrix<T>::solve(SimpleVector
       other[j] -= other[i] * work.entity[j][i];
   }
   return other;
+}
+
+template <typename T> inline SimpleVector<T> SimpleMatrix<T>::solveN(SimpleVector<T> other) const {
+  if(! (0 <= entity.size() && 0 <= ecols && entity.size() == ecols && entity.size() == other.size()) ) throw "SimpleMatrix<T>::SolveN error";
+  assert(0 && "SimpleMatrix<T>::solveN stub");
+  SimpleVector<T> res;
+  return res;
 }
 
 template <typename T> inline SimpleVector<T> SimpleMatrix<T>::projectionPt(const SimpleVector<T>& other) const {
@@ -2502,6 +2510,49 @@ template <typename T> static inline SimpleMatrix<T> log(const SimpleMatrix<T>& m
   return res;
 }
 
+template <typename T> static inline SimpleMatrix<T> logSym(const SimpleMatrix<T>& x, const SimpleMatrix<T>& b) {
+  // XXX stub.
+  assert(x.rows() == x.cols() && b.rows() == b.cols());
+  assert(! (x.rows() % b.rows()) && ! (x.cols() % b.cols()));
+  for(int i = 0; i < x.rows(); i ++)
+    for(int j = i + 1; j < x.cols(); j ++)
+      assert(x(i, j) == x(j, i));
+  for(int i = 0; i < b.rows(); i ++)
+    for(int j = i + 1; j < b.cols(); j ++)
+      assert(b(i, j) == b(j, i));
+  // N.B. Ux Lx Uxt == X := B^A == Ub Ua La log(Lb_k) Uat Ubt.
+  const auto Ub(b.SVD());
+  const auto Ubt(b.transpose().SVD());
+  const auto Lb(Ub * b * Ubt.transpose());
+        auto Ux(x.SVD());
+        auto Uxt(x.transpose().SVD());
+  const auto Lx(Ux * x * Uxt.transpose());
+  // N.B. Lx == [[La log(Lb_k)]]
+  SimpleVector<T> Lawork(Ux.rows());
+  Lawork.O();
+  for(int i = 0; i < Lawork.size(); i ++)
+    Lawork[i] = Lx(i, i) / log(Lb(i / (x.rows() / b.rows())));
+  // N.B. Lawork.subVector... == another subVector in Ua diag(La) Uat condition.
+  // XXX: might be a wrong method.
+  SimpleMatrix<T> UUb(x.rows(), x.cols());
+  auto UUbt(UUb);
+  UUb.O();
+  UUbt.O();
+  for(int i = 0; i < Ub.rows(); i ++)
+    for(int j = 0; j < Ub.cols(); j ++) {
+      UUb.setMatrix( i * (x.rows() / Ub.rows()),  j * (x.cols() / Ub.cols()),
+        SimpleMatrix<T>(Ub.rows(), Ub.cols()).I(Ub(i, j)) );
+      UUbt.setMatrix(i * (x.rows() / Ubt.rows()), j * (x.cols() / Ubt.cols()),
+        SimpleMatrix<T>(Ubt.rows(), Ubt.cols()).I(Ubt(i, j)) );
+    }
+  Ux  = Ub.inverse()  * Ux;
+  Uxt = Ubt.inverse() * Uxt;
+  // N.B. Ux == Ua sqrt(diag(Lawork)) and same on right side.
+  // XXX:
+    assert(0 && "log (symmetric matrix A, symmetric matrix B) : stub");
+  return x;
+}
+
 template <typename T> static inline SimpleMatrix<T> exp01(const SimpleMatrix<T>& m) {
   SimpleMatrix<T> res(m.rows(), m.cols());
   static const int cut(- log(SimpleMatrix<T>().epsilon()) / log(T(int(2))) * T(int(2)) );
@@ -2533,6 +2584,45 @@ template <typename T> static inline SimpleMatrix<T> exp(const SimpleMatrix<T>& m
 
 template <typename T> static inline SimpleMatrix<T> pow(const SimpleMatrix<T>& m, const T& p) {
   return exp(log(m) * p);
+}
+
+template <typename T> static inline SimpleMatrix<T> powSym(const SimpleMatrix<T>& m, const SimpleMatrix<T>& p) {
+  assert(m.rows() == m.cols() && p.rows() == p.cols());
+  for(int i = 0; i < m.rows(); i ++)
+    for(int j = i + 1; j < m.cols(); j ++)
+      assert(m(i, j) == m(j, i));
+  for(int i = 0; i < p.rows(); i ++)
+    for(int j = i + 1; j < p.cols(); j ++)
+      assert(p(i, j) == p(j, i));
+  // m = Um Lm Um^t, m^p == Um Lm^p Um^t.
+  // p = Up Lp Up^t, exp(log(Lm_i))^p == Up (Lp*log(Lm_i)) Up^t.
+  const auto Um(m.SVD());
+  const auto Umt(m.transpose().SVD());
+  const auto Lm(Um * m * Umt.transpose());
+  const auto Up(p.SVD());
+  const auto Upt(p.transpose().SVD());
+  const auto Lp(Up * p * Upt.transpose());
+  SimpleMatrix<T> res(m.rows() * p.rows(), m.cols() * p.cols());
+  res.O();
+  for(int i = 0; i < m.rows(); i ++) {
+    auto work(Up);
+    work.I(log(Lm(i, i)));
+    res.setMatrix(i * p.rows(), i * p.cols(), Up * work * Upt);
+  }
+  // XXX: here might not be trace trustworthy path,
+  //      so this might be a wrong method.
+  SimpleMatrix<T> UUm(m.rows() * p.rows(), m.cols() * p.cols());
+  auto UUmt(UUm);
+  UUm.O();
+  UUmt.O();
+  for(int i = 0; i < m.rows(); i ++)
+    for(int j = 0; j < m.rows(); j ++) {
+      UUm.setMatrix(i * p.rows(), j * p.cols(),
+        SimpleMatrix<T>(m.rows(), m.cols()).I(Um(i, j)));
+      UUmt.setMatrix(i * p.rows(), j * p.cols(),
+        SimpleMatrix<T>(m.rows(), m.cols()).I(Umt(i, j)));
+    }
+  return UUm * res * UUmt;
 }
 
 template <typename T> SimpleMatrix<complex<T> > dft(const int& size0) {
@@ -4559,9 +4649,7 @@ template <typename T> static inline SimpleVector<T> balanceIntInvariant(const Si
   for(int j = 0; j < mm.rows(); j ++)
     for(int k = 0; k < mm.cols(); k ++)
       vmm[j * mm.cols() + k] = move(mm(j, k));
-  // balance here.
-  // return f.solveN(vmm);
-  return SimpleVector<T>();
+  return f.solveN(vmm);
 }
 
 
