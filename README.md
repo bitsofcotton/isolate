@@ -29,3 +29,7 @@ Almost of the infinite loop is treated as A_0^infty by single loop A_0 matrix.
 So Log A_0^infty == infty Log A_0, also if they converges B:=A_0^infty, log B == lim(t) Log A_0(t).
 So taking the log on original algorithm optimized matrix makes some of the information on infinite loops however they lose some of the weight on the original single loops.
 
+# General Tips 3
+The important data on this isolate is what bit combinations are calculated as simple.
+So real problem on this is to separate and to make block on the bit set to be calculated as a block.
+
